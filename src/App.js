@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import styled from 'styled-components';
+
 import Menu from './components/Menu'
 import GoldMiner from './components/GoldMiner';
-import styled from 'styled-components';
 import Success from './components/Success';
 import GameOver from './components/GameOver';
+import getRandomInt from './helpers/getRandomInt';
+import parse from './helpers/parse';
+import constructGrid from './helpers/constructGrid';
 
 const Container = styled.div`
   display: grid;
@@ -27,12 +31,18 @@ const NavBar = styled.div`
 function App() {
   const [gridSize, setGridSize] = useState(8);
   const [goldLoc, setGoldLoc] = useState({ 
-    row: Math.floor(Math.random() * gridSize), 
-    col: Math.floor(Math.random() * gridSize)
+    row: getRandomInt(0, gridSize-1), 
+    col: getRandomInt(0, gridSize-1)
   });
-  const [pitsLoc, setPitsLoc] = useState("");
+  const [pitsLoc, setPitsLoc] = useState(
+    `${getRandomInt(0, gridSize-1)}, ${getRandomInt(0, gridSize-1)}`
+  );
   const [beaconsLoc, setBeaconsLoc] = useState("");
   const [behavior, setBehavior] = useState(false);
+  
+  const pits = parse(pitsLoc);
+  const beacons = parse(beaconsLoc);
+  const grid = constructGrid(gridSize, pits, beacons, goldLoc);
   return (
     <Router>
       <Container>
@@ -50,9 +60,10 @@ function App() {
             <GoldMiner 
               gridSize={gridSize}
               goldLoc={goldLoc}
-              pitsLoc={pitsLoc}
-              beaconsLoc={beaconsLoc}
-              behavior={behavior}
+              pits={pits}
+              beacons={beacons}
+              smart={behavior}
+              grid={grid}
             />
           </Route>
           <Route path='/' exact>
@@ -61,13 +72,13 @@ function App() {
               getGridSize={(e) => setGridSize(e.target.value)}
               goldLoc={goldLoc}
               getGoldXCoor={(e) => setGoldLoc(prev => ({ 
-                    ...prev, 
-                    row: e.target.value 
-                  }))}
+                  ...prev, 
+                  row: e.target.value 
+                }))}
               getGoldYCoor={(e) => setGoldLoc(prev => ({ 
-                    ...prev, 
-                    col: e.target.value 
-                  }))}
+                  ...prev, 
+                  col: e.target.value 
+                }))}
               pitsLoc={pitsLoc}
               getPitsLoc={(e) => setPitsLoc(e.target.value)}
               beaconsLoc={beaconsLoc}

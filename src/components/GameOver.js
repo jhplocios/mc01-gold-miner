@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
-import Typography from '@material-ui/core/Typography';
 import { Link, useParams } from 'react-router-dom';
+
+import Typography from '@material-ui/core/Typography';
 import { Button } from '@material-ui/core';
 
 const Container = styled.div`

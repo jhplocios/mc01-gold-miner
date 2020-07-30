@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { Link } from "react-router-dom";
 import styled from 'styled-components';
-import { Card } from './Menu';
 import Button from '@material-ui/core/Button';
-import miner from '../assets/Miner.gif';
-import gold from '../assets/gold.png';
-import pit from '../assets/pit.png';
-import beacon from '../assets/beacon.png';
 import Typography from '@material-ui/core/Typography';
-import { useInterval } from '../helpers/useInterval';
-import parse from '../helpers/parse';
 import Grid from '@material-ui/core/Grid';
 import Slider from '@material-ui/core/Slider';
 import DirectionsWalkIcon from '@material-ui/icons/DirectionsWalk';
 import DirectionsRunIcon from '@material-ui/icons/DirectionsRun';
 import { useHistory } from "react-router-dom";
+
+import { Card } from './Menu';
+import { useInterval } from '../helpers/useInterval';
+import getRandomInt from '../helpers/getRandomInt';
+
+import miner from '../assets/Miner.gif';
+import gold from '../assets/gold.png';
+import pit from '../assets/pit.png';
+import beacon from '../assets/beacon.png';
 
 const Container = styled.div`
   display: grid;
@@ -37,7 +39,6 @@ const Dashboard = styled.div`
   a, p {
     margin-top: 30px;
   }
-
 `
 
 const GridContainer = styled.div`
@@ -92,27 +93,22 @@ const Cluster = styled.div`
   grid-template-columns: 1fr 1fr;
 `
 
-const GoldMiner = ({ gridSize, goldLoc, pitsLoc, beaconsLoc }) => {
-  // initialize
-  const cols = Array(Number(gridSize)).fill(1);
-  const rows = Array(Number(gridSize)).fill(cols);
-  
+const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
   let history = useHistory();
-
-  const [pits] = useState(parse(pitsLoc));
-  const [beacons] = useState(parse(beaconsLoc));
+  
   const [totalMove, setTotalMove] = useState(0);
   const [totalRotate, setTotalRotate] = useState(0);
-  const [totalScan] = useState(0);
+  const [totalScan, setTotalScan] = useState(0);
   const [minerLoc, setMinerLoc] = useState({ row: 0, col: 0 });
   const [direction, setDirection] = useState('E');
   const [delay, setDelay] = useState(1000);
-  console.log(delay)
+
   const handleChangeDelay = (event, newValue) => {
     setDelay(newValue);
   };
 
   const move = () => {
+    setTotalMove(prev => prev + 1);
     let newRow, newCol;
     switch(direction) {
       case 'E':
@@ -139,10 +135,12 @@ const GoldMiner = ({ gridSize, goldLoc, pitsLoc, beaconsLoc }) => {
         }
         newRow = minerLoc.row - 1;
         return { row: newRow, col: minerLoc.col }
+      default:
     }
   }
 
   const rotate = () => {
+    setTotalRotate(prev => prev + 1);
     switch(direction) {
       case 'E':
         setDirection('S');
@@ -155,38 +153,90 @@ const GoldMiner = ({ gridSize, goldLoc, pitsLoc, beaconsLoc }) => {
         break;
       case 'N':
         setDirection('E');
+        break;
+      default:
     }
   }
 
-  useInterval(() => {
+  const scan = () => {
+    setTotalScan(prev => prev + 1);
+    const curRow = minerLoc.row;
+    const curCol = minerLoc.col;
+    switch(direction) {
+      case 'E':
+        for (let i=curCol+1; i<gridSize; i++) {
+          const cellValue = grid[curRow][i]
+          if (cellValue !== 0) {
+            return cellValue > 0 ? 'B' : 'P';
+          }
+        }  
+        return null;
+      case 'S':
+        for (let i=curRow+1; i<gridSize; i++) {
+          const cellValue = grid[i][curCol]
+          if (cellValue !== 0) {
+            return cellValue > 0 ? 'B' : 'P';
+          }
+        }
+        return null;
+      case 'W':
+        for (let i=curCol-1; i>=0; i--) {
+          const cellValue = grid[curRow][i]
+          if (cellValue !== 0) {
+            return cellValue > 0 ? 'B' : 'P';
+          }
+        } 
+        return null;
+      case 'N':
+        for (let i=curRow-1; i>=0; i--) {
+          const cellValue = grid[i][curCol]
+          if (cellValue !== 0) {
+            return cellValue > 0 ? 'B' : 'P';
+          }
+        }
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  const randomBehavior = () => {
     if (isGoldLoc(minerLoc.row, minerLoc.col)) {
       history.push(`/success/${totalMove}/${totalRotate}/${totalScan}`);
     }
 
-    if (isPits(minerLoc.row, minerLoc.col)) {
+    if (getCellValue() < 0) {
       history.push(`/game-over/${totalMove}/${totalRotate}/${totalScan}`);
     }
 
-    if (Math.floor(Math.random() * 4) === 0) {
+    if (getRandomInt(0, getRandomInt(2, 4)) === 2) {
       rotate();
-      setTotalRotate(prev => prev + 1);
     } else {
       const newLoc = move();
       if (newLoc) {
-        setTotalMove(prev => prev + 1);
         setMinerLoc(newLoc);
       }
+    }
+  }
+
+  const smartBehavior = () => {
+    // let found = false;
+    // while (!found) {
+
+    // }
+  }
+
+  useInterval(() => {
+    if (smart) {
+      smartBehavior();
+    } else {
+      randomBehavior();
     }
   }, delay);
   
   const isMinerLoc = (r, c) => (r === minerLoc.row && c === minerLoc.col);
   const isGoldLoc = (r, c) => (r === Number(goldLoc.row) && c === Number(goldLoc.col));
-  const isPits = (r, c) => {
-    return pits.find(loc => loc.row === r && loc.col === c)
-  }
-  const isBeacons = (r, c) => {
-    return beacons.find(loc => loc.row === r && loc.col === c)
-  }
+  const getCellValue = () => grid[minerLoc.row][minerLoc.col];
   return (
     <Container>
       <Dashboard>
@@ -240,16 +290,16 @@ const GoldMiner = ({ gridSize, goldLoc, pitsLoc, beaconsLoc }) => {
       </Dashboard>
       <Card>
         <GridContainer col={gridSize}>
-          {rows.map((_, r) => _.map((__, c) => {
+          {grid.map((_, r) => _.map((__, c) => {
             return (
               <Cell key={`${r}${c}`}>
                 {isMinerLoc(r, c) 
                   ? <Miner src={miner} direction={direction} /> 
                   : isGoldLoc(r, c)
                     ? <Gold src={gold} />
-                    : isPits(r, c)
+                    : __ < 0
                       ? <Pit src={pit} />
-                      : isBeacons(r, c)
+                      : __ > 0
                         ? <Beacon src={beacon} />
                         : null}
               </Cell>

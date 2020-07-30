@@ -84,7 +84,9 @@ export const Card = styled.div`
 `
 
 const Cluster = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-column-gap: 10px;
 `
 
 const Menu = ({ 
