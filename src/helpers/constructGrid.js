@@ -1,6 +1,5 @@
 export default function constructGrid(gridSize, pits, beacons, gold) {
-  // const defaultGridSize = gridSize || 8;
-  const grid = new Array(Number(gridSize)).fill(0);
+  const grid = new Array(Number(gridSize));
 
   for (let row=0; row<gridSize; row++) {
     grid[row] = new Array(Number(gridSize)).fill(0);

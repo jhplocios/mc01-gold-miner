@@ -28,17 +28,27 @@ const NavBar = styled.div`
 `
 
 function App() {
+  const getRandomGoldLoc = (s) => {
+    const size = Number(s)
+    const row = getRandomInt(0, size-1)
+    const col = getRandomInt(0, size-1)
+    return { row, col }
+  }
+  const getRandomValidBeacon = (s, r, c) => {
+    const size = Number(s)
+    const option1 = `${r}, ${getRandomInt(0, size)}`
+    const option2 = `${getRandomInt(0, size)}, ${c}`
+    return getRandomInt(0, 1) === 1 ? option1 : option2;
+  }
+
   const [gridSize, setGridSize] = useState(8);
-  const [goldLoc, setGoldLoc] = useState({ 
-    row: getRandomInt(0, gridSize-1), 
-    col: getRandomInt(0, gridSize-1)
-  });
+  const [goldLoc, setGoldLoc] = useState(getRandomGoldLoc(8));
   const [pitsLoc, setPitsLoc] = useState(
     `${getRandomInt(0, gridSize-1)}, ${getRandomInt(0, gridSize-1)}`
   );
-  const [beaconsLoc, setBeaconsLoc] = useState("");
+  const [beaconsLoc, setBeaconsLoc] = useState(getRandomValidBeacon(8, goldLoc.row, goldLoc.col));
   const [behavior, setBehavior] = useState(false);
-  
+
   const pits = parse(pitsLoc);
   const beacons = parse(beaconsLoc);
   return (
@@ -66,7 +76,13 @@ function App() {
           <Route path='/' exact>
             <Menu 
               gridSize={gridSize} 
-              getGridSize={(e) => setGridSize(e.target.value)}
+              getGridSize={(e) => {
+                const v = e.target.value
+                setGridSize(e.target.value)
+                const newGoldLoc = getRandomGoldLoc(v)
+                setGoldLoc(newGoldLoc)
+                setBeaconsLoc(getRandomValidBeacon(v, newGoldLoc.row, newGoldLoc.col))
+              }}
               goldLoc={goldLoc}
               getGoldXCoor={(e) => setGoldLoc(prev => ({ 
                   ...prev, 
