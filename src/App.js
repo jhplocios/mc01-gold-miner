@@ -8,7 +8,6 @@ import Success from './components/Success';
 import GameOver from './components/GameOver';
 import getRandomInt from './helpers/getRandomInt';
 import parse from './helpers/parse';
-import constructGrid from './helpers/constructGrid';
 
 const Container = styled.div`
   display: grid;
@@ -42,7 +41,6 @@ function App() {
   
   const pits = parse(pitsLoc);
   const beacons = parse(beaconsLoc);
-  const grid = constructGrid(gridSize, pits, beacons, goldLoc);
   return (
     <Router>
       <Container>
@@ -60,10 +58,9 @@ function App() {
             <GoldMiner 
               gridSize={gridSize}
               goldLoc={goldLoc}
+              smart={behavior}
               pits={pits}
               beacons={beacons}
-              smart={behavior}
-              grid={grid}
             />
           </Route>
           <Route path='/' exact>
