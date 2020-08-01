@@ -17,6 +17,7 @@ import miner from '../assets/Miner.gif';
 import gold from '../assets/gold.png';
 import pit from '../assets/pit.png';
 import beacon from '../assets/beacon.png';
+import constructGrid from '../helpers/constructGrid';
 
 const Container = styled.div`
   display: grid;
@@ -93,15 +94,30 @@ const Cluster = styled.div`
   grid-template-columns: 1fr 1fr;
 `
 
-const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
+const GoldMiner = ({ gridSize, pits, beacons, goldLoc, smart }) => {
   let history = useHistory();
-  
+
+  const [grid] = useState(constructGrid(gridSize, pits, beacons, goldLoc))
   const [totalMove, setTotalMove] = useState(0);
   const [totalRotate, setTotalRotate] = useState(0);
   const [totalScan, setTotalScan] = useState(0);
   const [minerLoc, setMinerLoc] = useState({ row: 0, col: 0 });
   const [direction, setDirection] = useState('E');
   const [delay, setDelay] = useState(1000);
+
+  const isMinerLoc = (r, c) => (r === minerLoc.row && c === minerLoc.col);
+  const isGoldLoc = (r, c) => (r === Number(goldLoc.row) && c === Number(goldLoc.col));
+  const getCellValue = () => grid[minerLoc.row][minerLoc.col];
+  const getCurLoc = () => `${minerLoc.row}${minerLoc.col}`;
+
+  const checkGameStatus = () => {
+    if (isGoldLoc(minerLoc.row, minerLoc.col)) {
+      history.push(`/success/${totalMove}/${totalRotate}/${totalScan}`);
+    }
+    if (getCellValue() < 0) {
+      history.push(`/game-over/${totalMove}/${totalRotate}/${totalScan}`);
+    }
+  }
 
   const handleChangeDelay = (event, newValue) => {
     setDelay(newValue);
@@ -170,7 +186,7 @@ const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
             return cellValue > 0 ? 'B' : 'P';
           }
         }  
-        return null;
+        return 'NULL';
       case 'S':
         for (let i=curRow+1; i<gridSize; i++) {
           const cellValue = grid[i][curCol]
@@ -178,7 +194,7 @@ const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
             return cellValue > 0 ? 'B' : 'P';
           }
         }
-        return null;
+        return 'NULL';
       case 'W':
         for (let i=curCol-1; i>=0; i--) {
           const cellValue = grid[curRow][i]
@@ -186,7 +202,7 @@ const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
             return cellValue > 0 ? 'B' : 'P';
           }
         } 
-        return null;
+        return 'NULL';
       case 'N':
         for (let i=curRow-1; i>=0; i--) {
           const cellValue = grid[i][curCol]
@@ -194,21 +210,199 @@ const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
             return cellValue > 0 ? 'B' : 'P';
           }
         }
-        return null;
+        return 'NULL';
       default:
-        return null;
+        return 'NULL';
+    }
+  }
+
+  const saveScan = () => {
+    const curRow = minerLoc.row;
+    const curCol = minerLoc.col;
+    let toBeSaved = {}
+    switch(direction) {
+      case 'E':
+        for (let i=curCol; i<gridSize-1; i++) {
+          if (!scanMemory[`${curRow}${i}-${direction}`]) {
+            console.log('memorize scan', `${curRow}${i}-${direction}`)
+            toBeSaved[`${curRow}${i}-${direction}`] = 'NULL'
+          }
+        }
+        setScanMemory({
+          ...scanMemory,
+          ...toBeSaved
+        })
+        break;  
+      case 'S':
+        for (let i=curRow; i<gridSize-1; i++) {
+          if (!scanMemory[`${i}${curCol}-${direction}`]) {
+            console.log('memorize scan', `${i}${curCol}-${direction}`)
+            toBeSaved[`${i}${curCol}-${direction}`] = 'NULL'
+          }
+        }
+        setScanMemory({
+          ...scanMemory,
+          ...toBeSaved
+        })
+        break;
+      case 'W':
+        for (let i=curCol; i>=1; i--) {
+          if (!scanMemory[`${curRow}${i}-${direction}`]) {
+            console.log('memorize scan', `${curRow}${i}-${direction}`)
+            toBeSaved[`${curRow}${i}-${direction}`] = 'NULL'
+          }
+        } 
+        setScanMemory({
+          ...scanMemory,
+          ...toBeSaved
+        })
+        break;
+      case 'N':
+        for (let i=curRow; i>=1; i--) {
+          if (!scanMemory[`${i}${curCol}-${direction}`]) {
+            console.log('memorize scan', `${i}${curCol}-${direction}`)
+            toBeSaved[`${i}${curCol}-${direction}`] = 'NULL'
+          }
+        }
+        setScanMemory({
+          ...scanMemory,
+          ...toBeSaved
+        })
+        break;
+      default:
+    }
+  }
+
+  const isScanable = () => {
+    switch(direction) {
+      case 'E':
+        return minerLoc.col !== gridSize-1;
+      case 'S':
+        return minerLoc.row !== gridSize-1;
+      case 'N':
+        return minerLoc.row !== 0;
+      case 'W':
+        return minerLoc.col !== 0;
+      default:
+    }
+  }
+
+  const isScanDone = () => {
+    const curLoc = getCurLoc()
+    return scanMemory[`${curLoc}-E`] && 
+      scanMemory[`${curLoc}-S`] &&
+      scanMemory[`${curLoc}-W`] &&
+      scanMemory[`${curLoc}-N`];
+  }
+
+  const beaconLocated = () => {
+    const curLoc = getCurLoc()
+    if (scanMemory[`${curLoc}-E`] === 'B') {
+      return 'E';
+    }
+    if (scanMemory[`${curLoc}-S`] === 'B') {
+      return 'S';
+    }
+    if (scanMemory[`${curLoc}-W`] === 'B') {
+      return 'W';
+    }
+    if (scanMemory[`${curLoc}-N`] === 'B') {
+      return 'N';
+    }
+    return null;
+  }
+  
+  const forecast = () => {
+    const curLoc = getCurLoc();
+    const locN = `${minerLoc.row-1}${minerLoc.col}`;
+    const locE = `${minerLoc.row}${minerLoc.col+1}`;
+    const locS = `${minerLoc.row+1}${minerLoc.col}`;
+    const locW = `${minerLoc.row}${minerLoc.col-1}`;
+    const freq = []
+    freq.push({
+      prune: scanMemory[`${curLoc}-N`] === 'P' || minerLoc.row === 0,
+      value: countMemory[locN] || 0,
+      direction: 'N'
+    }, {
+      prune: scanMemory[`${curLoc}-E`] === 'P' || minerLoc.col === gridSize,
+      value: countMemory[locE] || 0,
+      direction: 'E'
+    }, {
+      prune: scanMemory[`${curLoc}-S`] === 'P' || minerLoc.row === gridSize,
+      value: countMemory[locS] || 0,
+      direction: 'S'
+    }, {
+      prune: scanMemory[`${curLoc}-W`] === 'P' || minerLoc.col === 0,
+      value: countMemory[locW] || 0,
+      direction: 'W'
+    })
+
+    const sorted = freq.sort((a, b) => a.value - b.value)
+    const pruned = freq.filter(f => !f.prune)
+    const filtered = pruned.filter(f => f.value === pruned[0].value)
+    const index = getRandomInt(0, filtered.length-1)
+    console.log(sorted, filtered, index)
+    return filtered[index].direction;
+  }
+
+  const getGoldDirection = () => {
+    const locN = `${minerLoc.row-1}${minerLoc.col}`;
+    const locE = `${minerLoc.row}${minerLoc.col+1}`;
+    const locS = `${minerLoc.row+1}${minerLoc.col}`;
+    const locW = `${minerLoc.row}${minerLoc.col-1}`;
+    const freq = []
+    freq.push({
+      prune: minerLoc.row === 0,
+      value: countMemory[locN] || 0,
+      direction: 'N'
+    }, {
+      prune: minerLoc.col === gridSize,
+      value: countMemory[locE] || 0,
+      direction: 'E'
+    }, {
+      prune: minerLoc.row === gridSize,
+      value: countMemory[locS] || 0,
+      direction: 'S'
+    }, {
+      prune: minerLoc.col === 0,
+      value: countMemory[locW] || 0,
+      direction: 'W'
+    })
+
+    const sorted = freq.sort((a, b) => a.value - b.value)
+    const pruned = freq.filter(f => !f.prune)
+    const filtered = pruned.filter(f => f.value === pruned[0].value)
+    const index = getRandomInt(0, filtered.length-1)
+    console.log(sorted, filtered, index)
+    return filtered[index].direction;
+  }
+
+  const getReverse = () => {
+    const d = ['N', 'E', 'S', 'W']
+    const index = d.indexOf(direction)
+    const newIndex = (index + 2) % 4;
+    return d[newIndex];
+  }
+
+  const memorizeCount = () => {
+    const curLoc = getCurLoc()
+    if (countMemory[curLoc]) {
+      const newCount = countMemory[curLoc] + 1;
+      setCountMemory({
+        ...countMemory,
+        [curLoc]: newCount
+      });
+      console.log('memorize count add', curLoc, newCount)
+    } else {
+      setCountMemory({
+        ...countMemory,
+        [curLoc]: 1
+      });
+      console.log('memorize count init', curLoc)
     }
   }
 
   const randomBehavior = () => {
-    if (isGoldLoc(minerLoc.row, minerLoc.col)) {
-      history.push(`/success/${totalMove}/${totalRotate}/${totalScan}`);
-    }
-
-    if (getCellValue() < 0) {
-      history.push(`/game-over/${totalMove}/${totalRotate}/${totalScan}`);
-    }
-
     if (getRandomInt(0, getRandomInt(2, 4)) === 2) {
       rotate();
     } else {
@@ -219,24 +413,153 @@ const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
     }
   }
 
-  const smartBehavior = () => {
-    // let found = false;
-    // while (!found) {
+  const [scanResult, setScanResult] = useState('');
+  const [scanMemory, setScanMemory] = useState({});
+  const [countMemory, setCountMemory] = useState({});
+  const [forecastDirection, setForecastDirection] = useState('');
+  const [beaconDirection, setBeaconDirection] = useState('');
+  const [distanceGold, setDistanceGold] = useState(-1);
+  const [searchGold, setSearchGold] = useState({});
+  const [backtrack, setBacktrack] = useState(false)
 
-    // }
+  const smartBehavior = () => {
+    const scanDone = isScanDone();
+    
+    if (beaconDirection === '' && scanResult === '' && !scanDone) {
+      if (isScanable()) {
+        if (!scanMemory[`${getCurLoc()}-${direction}`]) {
+          const result = scan()
+          console.log('scan', direction, result)
+          setScanResult(result);
+          if (result === 'NULL') {
+            saveScan();
+          } else {
+            console.log('memorize scan', `${getCurLoc()}-${direction}`)
+            setScanMemory({
+              ...scanMemory,
+              [`${getCurLoc()}-${direction}`]: result
+            })
+          }
+        } else {
+          rotate();
+        }
+      } else {
+        console.log('scan n/a', direction)
+        setScanMemory({
+          ...scanMemory,
+          [`${getCurLoc()}-${direction}`]: 'n/a'
+        })
+        rotate();
+      }
+    } else if (beaconDirection === '' && !scanDone) {
+      console.log('rotate')
+      rotate();
+      setScanResult('');
+    } else if (searchGold.direction && searchGold.direction !== '') {
+      if (backtrack) {
+        console.log('backtrack', searchGold)
+        if (searchGold.direction !== direction) {
+          rotate();
+        } else if (searchGold.remaining > 0) {
+          memorizeCount();
+          const newLoc = move();
+          if (newLoc) {
+            setMinerLoc(newLoc);
+            setSearchGold({
+              ...searchGold,
+              remaining: searchGold.remaining - 1,
+            })
+          }
+        } else {
+          setBacktrack(false)
+          setSearchGold({
+            direction: getGoldDirection(),
+            remaining: distanceGold,
+          })
+        }
+      } else if (searchGold.remaining > 0) {
+        console.log('searching gold', searchGold)
+        if (isScanable()) {
+          if (searchGold.direction !== direction) {
+            rotate();
+          } else {
+            memorizeCount();
+            const newLoc = move();
+            if (newLoc) {
+              setMinerLoc(newLoc);
+              setSearchGold({
+                ...searchGold,
+                remaining: searchGold.remaining - 1,
+              })
+            }
+          }
+        } else {
+          setBacktrack(true)
+          setSearchGold({
+            direction: getReverse(),
+            remaining: distanceGold - searchGold.remaining,
+          })
+        }
+      } else {
+        setBacktrack(true)
+        setSearchGold({
+          direction: getReverse(),
+          remaining: distanceGold,
+        })
+      }
+
+    } else if (beaconDirection !== '') {
+      const cellValue = grid[minerLoc.row][minerLoc.col];
+      const onBeacon = cellValue > 0;
+      console.log('beacon targeted', beaconDirection, direction)
+
+      if (beaconDirection !== direction) {
+        rotate();
+      } else if (onBeacon) {
+        console.log('gold targeted')
+        setDistanceGold(cellValue)
+        setSearchGold({
+          direction: getGoldDirection(),
+          remaining: cellValue
+        })
+      } else {
+        memorizeCount();
+        const newLoc = move();
+        if (newLoc) {
+          setMinerLoc(newLoc);
+        }
+      }
+    } else {
+      const beaconDirection = beaconLocated();
+      if (beaconDirection) {
+        console.log('found beacon')
+        setBeaconDirection(beaconDirection);
+      } else if (forecastDirection === '') {
+        console.log('forecasting')
+        setForecastDirection(forecast());
+      } else {
+        console.log('forecast', forecastDirection, direction)
+        if(forecastDirection !== direction) {
+          rotate();
+        } else {
+          memorizeCount();
+          const newLoc = move();
+          if (newLoc) {
+            setMinerLoc(newLoc);
+            setForecastDirection('');
+            setScanResult('');
+          }
+        }
+      }
+    }
   }
 
   useInterval(() => {
-    if (smart) {
-      smartBehavior();
-    } else {
-      randomBehavior();
-    }
+    checkGameStatus();
+    behavior();
   }, delay);
   
-  const isMinerLoc = (r, c) => (r === minerLoc.row && c === minerLoc.col);
-  const isGoldLoc = (r, c) => (r === Number(goldLoc.row) && c === Number(goldLoc.col));
-  const getCellValue = () => grid[minerLoc.row][minerLoc.col];
+  const behavior = smart ? smartBehavior : randomBehavior;
   return (
     <Container>
       <Dashboard>
@@ -311,4 +634,4 @@ const GoldMiner = ({ gridSize, goldLoc, pits, beacons, smart, grid }) => {
   )
 }
 
-export default GoldMiner;
+export default React.memo(GoldMiner, []);
