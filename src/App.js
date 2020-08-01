@@ -40,12 +40,11 @@ function App() {
     const option2 = `${getRandomInt(0, size)}, ${c}`
     return getRandomInt(0, 1) === 1 ? option1 : option2;
   }
+  const getRandomPitsLoc = (s) => `${getRandomInt(0, s-1)}, ${getRandomInt(0, s-1)}`
 
   const [gridSize, setGridSize] = useState(8);
   const [goldLoc, setGoldLoc] = useState(getRandomGoldLoc(8));
-  const [pitsLoc, setPitsLoc] = useState(
-    `${getRandomInt(0, gridSize-1)}, ${getRandomInt(0, gridSize-1)}`
-  );
+  const [pitsLoc, setPitsLoc] = useState(getRandomPitsLoc(8));
   const [beaconsLoc, setBeaconsLoc] = useState(getRandomValidBeacon(8, goldLoc.row, goldLoc.col));
   const [behavior, setBehavior] = useState(false);
 
@@ -82,6 +81,7 @@ function App() {
                 const newGoldLoc = getRandomGoldLoc(v)
                 setGoldLoc(newGoldLoc)
                 setBeaconsLoc(getRandomValidBeacon(v, newGoldLoc.row, newGoldLoc.col))
+                setPitsLoc(getRandomPitsLoc(v))
               }}
               goldLoc={goldLoc}
               getGoldXCoor={(e) => setGoldLoc(prev => ({ 
