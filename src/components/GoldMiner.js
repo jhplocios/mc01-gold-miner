@@ -104,6 +104,7 @@ const GoldMiner = ({ gridSize, pits, beacons, goldLoc, smart }) => {
   const [minerLoc, setMinerLoc] = useState({ row: 0, col: 0 });
   const [direction, setDirection] = useState('E');
   const [delay, setDelay] = useState(1000);
+  const [goal, setGoal] = useState({ row: Number(gridSize)-1, col: Number(gridSize)-1 });
 
   const isMinerLoc = (r, c) => (r === minerLoc.row && c === minerLoc.col);
   const isGoldLoc = (r, c) => (r === Number(goldLoc.row) && c === Number(goldLoc.col));
@@ -319,29 +320,39 @@ const GoldMiner = ({ gridSize, pits, beacons, goldLoc, smart }) => {
     const locS = `${minerLoc.row+1}${minerLoc.col}`;
     const locW = `${minerLoc.row}${minerLoc.col-1}`;
     const freq = []
+
     freq.push({
+      goal: Math.abs(goal.row - minerLoc.row+1) + Math.abs(goal.col - minerLoc.col),
       prune: scanMemory[`${curLoc}-N`] === 'P' || minerLoc.row === 0,
       value: countMemory[locN] || 0,
       direction: 'N'
     }, {
+      goal: Math.abs(goal.row - minerLoc.row) + Math.abs(goal.col - minerLoc.col-1),
       prune: scanMemory[`${curLoc}-E`] === 'P' || minerLoc.col === gridSize,
       value: countMemory[locE] || 0,
       direction: 'E'
     }, {
+      goal: Math.abs(goal.row - minerLoc.row-1) + Math.abs(goal.col - minerLoc.col),
       prune: scanMemory[`${curLoc}-S`] === 'P' || minerLoc.row === gridSize,
       value: countMemory[locS] || 0,
       direction: 'S'
     }, {
+      goal: Math.abs(goal.row - minerLoc.row) + Math.abs(goal.col - minerLoc.col+1),
       prune: scanMemory[`${curLoc}-W`] === 'P' || minerLoc.col === 0,
       value: countMemory[locW] || 0,
       direction: 'W'
     })
 
-    const sorted = freq.sort((a, b) => a.value - b.value)
     const pruned = freq.filter(f => !f.prune)
-    const filtered = pruned.filter(f => f.value === pruned[0].value)
+    const sorted = pruned.sort((a, b) => {
+      if (a.goal - b.goal !== 0) {
+        return a.goal - b.goal;
+      }
+      return a.value - b.value;
+    })
+    const filtered = sorted.filter(f => f.goal === sorted[0].goal)
     const index = getRandomInt(0, filtered.length-1)
-    console.log(sorted, filtered, index)
+    console.log(freq, sorted, filtered, index)
     return filtered[index].direction;
   }
 
@@ -369,11 +380,11 @@ const GoldMiner = ({ gridSize, pits, beacons, goldLoc, smart }) => {
       direction: 'W'
     })
 
-    const sorted = freq.sort((a, b) => a.value - b.value)
     const pruned = freq.filter(f => !f.prune)
-    const filtered = pruned.filter(f => f.value === pruned[0].value)
+    const sorted = pruned.sort((a, b) => a.value - b.value)
+    const filtered = sorted.filter(f => f.value === sorted[0].value)
     const index = getRandomInt(0, filtered.length-1)
-    console.log(sorted, filtered, index)
+    console.log(freq, sorted, filtered, index)
     return filtered[index].direction;
   }
 
@@ -424,6 +435,9 @@ const GoldMiner = ({ gridSize, pits, beacons, goldLoc, smart }) => {
 
   const smartBehavior = () => {
     const scanDone = isScanDone();
+    if (minerLoc.row === goal.row && minerLoc.col === goal.col) {
+      setGoal({ row: getRandomInt(0, gridSize-1), col: getRandomInt(0, gridSize-1) })
+    }
     
     if (beaconDirection === '' && scanResult === '' && !scanDone) {
       if (isScanable()) {
