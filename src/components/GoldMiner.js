@@ -356,11 +356,11 @@ const GoldMiner = ({ gridSize, pits, beacons, goldLoc, smart }) => {
       value: countMemory[locN] || 0,
       direction: 'N'
     }, {
-      prune: minerLoc.col === gridSize,
+      prune: minerLoc.col === gridSize-1,
       value: countMemory[locE] || 0,
       direction: 'E'
     }, {
-      prune: minerLoc.row === gridSize,
+      prune: minerLoc.row === gridSize-1,
       value: countMemory[locS] || 0,
       direction: 'S'
     }, {
