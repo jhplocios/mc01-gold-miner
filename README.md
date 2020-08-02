@@ -1,68 +1,44 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+You can access the app here https://gold-miner.herokuapp.com/
 
-## Available Scripts
+## MC01 Gold Miner
 
-In the project directory, you can run:
+Gold Miner is a web application of an intelligent agent that simulates a Miner on a square grid with n dimension. The objective of the agent is to reach the pot of gold with the shortest path posible while avoiding falling into a pit. 
 
-### `yarn start`
+Here are the list of the specs of Gold Miner: 
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+###### MINING AREA
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+Each location (square) in the mining area (the nxn grid) can have only one of the following objects:
 
-### `yarn test`
+    the miner
+    the pot of gold (G)
+    a pit (P)
+    a beacon (B)
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+###### FRONT
 
-### `yarn build`
+The miner has a front, indicating the direction of the actions scan and move. The miner moves around the mining area by displacing itself one square to the front, unless it is over the edge of the grid, which should be programmed as a technical “impossibility”.
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+###### SCAN
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+To view what is in front of the miner all the way to the edge of the mining area, the miner uses the action scan. The scan action returns only one of the following : p for pit, g for gold, b for beacon, depending on which one of these is nearest to the miner. If there is no pit, beacon nor gold in all the squares in front of the miner, then the action scan returns “NULL”. 
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+###### ROTATE
 
-### `yarn eject`
+The direction of its front can be altered through the action rotate, which moves 90 degrees clockwise each time rotate is invoked.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+###### PIT
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+If the miner moves into square that is a pit, it is game-over!
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+###### BEACON
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+A beacon on a square indicates that from that square, the golden square can be reached in m squares in any vertical or horizontal direction, where m < n, without ever falling into a pit. The value of m is not returned by the action scan.
 
-## Learn More
+###### GOLDEN SQUARE
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+If the miner moves into square that contains the pot of gold,   the miner stops, and delivers a “search successful” message. 
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+###### AGENT RATIONALITY
 
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+The locations of the pits and beacons are variable. The most intelligent agent will be determined by comparing the average number of squares that were traversed to reach the golden square.  
